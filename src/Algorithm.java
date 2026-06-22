@@ -26,22 +26,32 @@ public class Algorithm {
 	}
 
 	public void dfs(Node start, Node end, int graphWidth, int graphHeight) {
+		Logger.info("DFS started from (" + start.getX() + ", " + start.getY() + ") to ("
+				+ end.getX() + ", " + end.getY() + ")");
 		Node[][] prev = new Node[graphWidth][graphHeight];
 		Stack<Node> nodes = new Stack<>();
 		nodes.push(start);
+		int visited = 0;
+		boolean found = false;
 
 		while (!nodes.empty()) {
+			Logger.info("DFS new loop");
 			Node curNode = nodes.pop();
 
 			if (curNode.isEnd()) {
+				Logger.info("DFS reached target after visiting " + visited + " nodes");
 				curNode.setColor(Color.MAGENTA);
+				found = true;
 				break;
 			}
 
 			if (curNode.isSearched()) {
+				Logger.debug("DFS skipping already-visited node (" + curNode.getX() + ", " + curNode.getY() + ")");
 				continue;
 			}
 
+			Logger.node("DFS visiting", curNode);
+			visited++;
 			curNode.setColor(Color.ORANGE);
 			sleep();
 			curNode.setColor(Color.BLUE);
@@ -51,28 +61,43 @@ public class Algorithm {
 					prev[adjacent.getX()][adjacent.getY()] = curNode;
 				}
 				if (!adjacent.isSearched()) {
+					Logger.node("DFS pushing", adjacent);
 					nodes.push(adjacent);
 				}
 			}
+
+			Logger.nextDfs(nodes);
 		}
 
+		if (!found) {
+			Logger.warn("DFS exhausted the stack without reaching the target");
+		}
 		shortpath(prev, end);
 	}
 
 	public void bfs(Node start, Node end, int graphWidth, int graphHeight) {
+		Logger.info("BFS started from (" + start.getX() + ", " + start.getY() + ") to ("
+				+ end.getX() + ", " + end.getY() + ")");
 		Queue<Node> queue = new LinkedList<>();
 		Node[][] prev = new Node[graphWidth][graphHeight];
+		int visited = 0;
+		boolean found = false;
 
 		queue.add(start);
 		while (!queue.isEmpty()) {
+			Logger.info("BFS new loop");
 
 			Node curNode = queue.poll();
 			if (curNode.isEnd()) {
+				Logger.info("BFS reached target after visiting " + visited + " nodes");
 				curNode.setColor(Color.MAGENTA);
+				found = true;
 				break;
 			}
 
 			if (!curNode.isSearched()) {
+				Logger.node("BFS visiting", curNode);
+				visited++;
 				curNode.setColor(Color.ORANGE);
 				sleep();
 				curNode.setColor(Color.BLUE);
@@ -81,28 +106,45 @@ public class Algorithm {
 					if (!adjacent.isSearched() && adjacent != start
 							&& prev[adjacent.getX()][adjacent.getY()] == null) {
 						prev[adjacent.getX()][adjacent.getY()] = curNode;
+						Logger.node("BFS enqueuing", adjacent);
 						queue.add(adjacent);
 					}
 				}
+
+				Logger.nextBfs(queue);
 			}
 		}
 
+		if (!found) {
+			Logger.warn("BFS exhausted the queue without reaching the target");
+		}
 		shortpath(prev, end);
 	}
 
 	private void shortpath(Node[][] prev, Node end) {
+		if (prev[end.getX()][end.getY()] == null) {
+			Logger.warn("No path to the target; nothing to reconstruct");
+			return;
+		}
+		Logger.info("Reconstructing shortest path to target");
 		Node pathConstructor = end;
+		int length = 0;
 		while (pathConstructor != null) {
 			pathConstructor = prev[pathConstructor.getX()][pathConstructor.getY()];
 
 			if (pathConstructor != null) {
+				Logger.node("Path", pathConstructor);
 				pathConstructor.setColor(Color.ORANGE);
+				length++;
 			}
 			sleep();
 		}
+		Logger.info("Path reconstruction complete (" + length + " steps)");
 	}
 
 	public void Astar(Node start, Node targetNode, int graphWidth, int graphHeight) {
+		Logger.info("A* started from (" + start.getX() + ", " + start.getY() + ") to ("
+				+ targetNode.getX() + ", " + targetNode.getY() + ")");
 		List<Node> openList = new ArrayList<Node>();
 		Node[][] prev = new Node[graphWidth][graphHeight];
 
@@ -113,6 +155,8 @@ public class Algorithm {
 		}
 		gScore[start.getX()][start.getY()] = 0;
 		openList.add(start);
+		int visited = 0;
+		boolean found = false;
 
 		while (!openList.isEmpty()) {
 
@@ -120,10 +164,15 @@ public class Algorithm {
 			openList.remove(curNode);
 
 			if (curNode.isEnd()) {
+				Logger.info("A* reached target after visiting " + visited + " nodes");
 				curNode.setColor(Color.MAGENTA);
+				found = true;
 				break;
 			}
 
+			Logger.debug("A* expanding node (" + curNode.getX() + ", " + curNode.getY() + ") f="
+					+ (gScore[curNode.getX()][curNode.getY()] + Node.distance(curNode, targetNode)));
+			visited++;
 			curNode.setColor(Color.ORANGE);
 			sleep();
 			curNode.setColor(Color.BLUE);
@@ -134,13 +183,20 @@ public class Algorithm {
 				if (tentativeG < gScore[adjacent.getX()][adjacent.getY()]) {
 					prev[adjacent.getX()][adjacent.getY()] = curNode;
 					gScore[adjacent.getX()][adjacent.getY()] = tentativeG;
+					Logger.debug("A* relaxing neighbour (" + adjacent.getX() + ", " + adjacent.getY()
+							+ ") g=" + tentativeG);
 					if (!openList.contains(adjacent)) {
 						openList.add(adjacent);
 					}
 				}
 			}
+
+			Logger.nextAstar(getLeastF(openList, gScore, targetNode));
 		}
 
+		if (!found) {
+			Logger.warn("A* exhausted the open list without reaching the target");
+		}
 		shortpath(prev, targetNode);
 	}
 
