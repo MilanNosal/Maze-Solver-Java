@@ -14,7 +14,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -125,10 +124,10 @@ public class Main extends Canvas implements Runnable, MouseListener {
 		bfsItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				if (runTimeMain.isMazeValid()) {
-					algorithm.bfs(runTimeMain.start, runTimeMain.target, runTimeMain.NODES_WIDTH,
-							runTimeMain.NODES_HEIGHT);
+					runTimeMain.clearSearchResults();
+					new Thread(() -> algorithm.bfs(start, target, NODES_WIDTH, NODES_HEIGHT)).start();
 				} else {
-					System.out.println("DIDNT LAUNCH");
+					showNeedStartAndEnd();
 				}
 
 			}
@@ -137,9 +136,10 @@ public class Main extends Canvas implements Runnable, MouseListener {
 		dfsItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				if (runTimeMain.isMazeValid()) {
-					algorithm.dfs(runTimeMain.getStart());
+					runTimeMain.clearSearchResults();
+					new Thread(() -> algorithm.dfs(start, target, NODES_WIDTH, NODES_HEIGHT)).start();
 				} else {
-					System.out.println("DIDNT LAUNCH");
+					showNeedStartAndEnd();
 				}
 
 			}
@@ -148,10 +148,10 @@ public class Main extends Canvas implements Runnable, MouseListener {
 		astarItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				if (runTimeMain.isMazeValid()) {
-					algorithm.Astar(runTimeMain.start, runTimeMain.target, runTimeMain.NODES_WIDTH,
-							runTimeMain.NODES_HEIGHT);
+					runTimeMain.clearSearchResults();
+					new Thread(() -> algorithm.Astar(start, target, NODES_WIDTH, NODES_HEIGHT)).start();
 				} else {
-					System.out.println("DIDNT LAUNCH");
+					showNeedStartAndEnd();
 				}
 
 			}
@@ -159,8 +159,22 @@ public class Main extends Canvas implements Runnable, MouseListener {
 		});
 		searchTime.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				String input = JOptionPane.showInputDialog(null, "Enter a time it takes to search each node in miliseconds(default = 100ms) ", "Search Time", JOptionPane.QUESTION_MESSAGE);
-				algorithm.setSearchTime(Integer.parseInt(input));
+				String input = JOptionPane.showInputDialog(null,
+						"Enter a time it takes to search each node in miliseconds(default = 100ms) ", "Search Time",
+						JOptionPane.QUESTION_MESSAGE);
+				if (input == null) {
+					return; // user cancelled
+				}
+				try {
+					int ms = Integer.parseInt(input.trim());
+					if (ms < 0) {
+						throw new NumberFormatException("negative");
+					}
+					algorithm.setSearchTime(ms);
+				} catch (NumberFormatException e) {
+					JOptionPane.showMessageDialog(null, "Please enter a non-negative whole number.", "Invalid input",
+							JOptionPane.ERROR_MESSAGE);
+				}
 			}
 		});
 
@@ -266,37 +280,43 @@ public class Main extends Canvas implements Runnable, MouseListener {
 		int option = fileChooser.showOpenDialog(frame);
 		if (option == JFileChooser.APPROVE_OPTION) {
 			File file = fileChooser.getSelectedFile();
-			BufferedReader reader = new BufferedReader(new FileReader(file.getAbsolutePath()));
-			String line = null;
-			for (int i = 0; i < NODES_WIDTH; i++) {
-				line = reader.readLine();
-				for (int j = 0; j < NODES_HEIGHT; j++) {
-					
-					//nodeList[i][j].setColor(Color.BLACK);
-					int nodeType = Character.getNumericValue(line.charAt(j));
-					System.out.println("node is " + nodeType);
-					switch (nodeType) {
-					case 0:
-						nodeList[i][j].setColor(Color.LIGHT_GRAY);
-						break;
-					case 1:
-						nodeList[i][j].setColor(Color.BLACK);
-						break;
+			try (BufferedReader reader = new BufferedReader(new FileReader(file.getAbsolutePath()))) {
+				// reset state so a partial/short file can't leave stale start/target around
+				createNodes(true);
+				start = null;
+				target = null;
 
-					case 2:
-						nodeList[i][j].setColor(Color.GREEN);
-						start = nodeList[i][j];
-						break;
-					case 3:
-						nodeList[i][j].setColor(Color.RED);
-						target = nodeList[i][j];
-						break;
+				String line = null;
+				for (int i = 0; i < NODES_WIDTH; i++) {
+					line = reader.readLine();
+					if (line == null) {
+						break; // file shorter than the grid; leave remaining rows cleared
+					}
+					int cols = Math.min(NODES_HEIGHT, line.length());
+					for (int j = 0; j < cols; j++) {
+						int nodeType = Character.getNumericValue(line.charAt(j));
+						switch (nodeType) {
+						case 0:
+							nodeList[i][j].setColor(Color.LIGHT_GRAY);
+							break;
+						case 1:
+							nodeList[i][j].setColor(Color.BLACK);
+							break;
+						case 2:
+							nodeList[i][j].setColor(Color.GREEN);
+							start = nodeList[i][j];
+							break;
+						case 3:
+							nodeList[i][j].setColor(Color.RED);
+							target = nodeList[i][j];
+							break;
+						default:
+							nodeList[i][j].setColor(Color.LIGHT_GRAY);
+							break;
+						}
 					}
 				}
-
 			}
-			reader.close();
-			// System.out.println(stringMaze);
 		}
 	}
 
@@ -357,18 +377,13 @@ public class Main extends Canvas implements Runnable, MouseListener {
 	}
 
 	public boolean isMazeValid() {
-		return target == null ? false : true && start == null ? false : true;
+		return start != null && target != null;
 	}
 
-	private Node getStart() {
-		for (int i = 0; i < nodeList.length; i++) {
-			for (int j = 0; j < nodeList[i].length; j++) {
-				if (nodeList[i][j].isStart()) {
-					return nodeList[i][j];
-				}
-			}
-		}
-		return null;
+	private static void showNeedStartAndEnd() {
+		JOptionPane.showMessageDialog(null,
+				"Set a start (middle click) and an end (right click) node before running an algorithm.",
+				"Maze not ready", JOptionPane.WARNING_MESSAGE);
 	}
 
 	public Node getNodeAt(int x, int y) {
@@ -377,7 +392,6 @@ public class Main extends Canvas implements Runnable, MouseListener {
 		y -= 15;
 		y /= 35;
 
-		System.out.println(x + ":" + y);
 		if (x >= 0 && y >= 0 && x < nodeList.length && y < nodeList[x].length) {
 			return nodeList[x][y];
 		}

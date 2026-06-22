@@ -1,7 +1,6 @@
 
 import java.util.ArrayList;
 import java.util.List;
-import java.lang.Math;
 import java.awt.Color;
 import java.awt.Graphics2D;
 
@@ -13,8 +12,6 @@ public class Node {
 	private final int WIDTH = 35;
 	private final int HEIGHT = 35;
 	private Node left, right, up, down;
-
-	private double fcost;
 
 
 	public Node(int x, int y) {
@@ -40,7 +37,6 @@ public class Node {
 	}
 
 	public void Clicked(int buttonCode) {
-		System.out.println("called");
 		if (buttonCode == 1) {
 			// WALL
 			nodeColor = Color.BLACK;
@@ -61,13 +57,6 @@ public class Node {
 			clearNode();
 
 		}
-	}	
-	public double getFCost() {
-		return this.fcost;
-	}
-
-	public void setFCost(double fcost) {
-		this.fcost = fcost;
 	}
 
 	public void setColor(Color c) {

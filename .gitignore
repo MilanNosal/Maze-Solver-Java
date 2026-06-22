@@ -1,0 +1,8 @@
+# Compiled class files
+bin/
+*.class
+
+# Eclipse / IDE metadata
+.settings/
+.metadata/
+*.tmp

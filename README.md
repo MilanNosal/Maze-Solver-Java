@@ -7,7 +7,7 @@ Maze-solver-java is application with an interactive GUI that lets you design you
 
 
 * `Left Click -> Wall`
-* `Rigth Click -> End (Target Node)`
+* `Right Click -> End (Target Node)`
 * `Middle Click -> Start`
 
 The algorithms included are:
