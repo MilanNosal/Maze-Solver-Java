@@ -67,6 +67,7 @@ public class Algorithm {
 			}
 
 			Logger.nextDfs(nodes);
+			Logger.info("DFS end loop");
 		}
 
 		if (!found) {
