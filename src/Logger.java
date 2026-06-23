@@ -69,7 +69,7 @@ public class Logger {
 		if (stack.isEmpty()) {
 			next("DFS", null);
 		} else {
-			next("DFS", stack.peek());
+			next("DFS", stack.pop());
 		}
 	}
 
