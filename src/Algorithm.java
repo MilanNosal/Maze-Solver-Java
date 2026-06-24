@@ -33,10 +33,11 @@ public class Algorithm {
 		nodes.push(start);
 		int visited = 0;
 		boolean found = false;
+		Node curNode = null;
 
 		while (!nodes.empty()) {
 			Logger.info("DFS new loop");
-			Node curNode = nodes.pop();
+			curNode = nodes.pop();
 
 			if (curNode.isEnd()) {
 				Logger.info("DFS reached target after visiting " + visited + " nodes");
